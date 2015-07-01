@@ -37,14 +37,14 @@
 #endif
 
 
-#undef AU_DEBUG
+ #undef AU_DEBUG
 
 #undef debug
-#ifdef	AU_DEBUG
-#define debug(fmt,args...)	printf (fmt ,##args)
-#else
-#define debug(fmt,args...)
-#endif	/* AU_DEBUG */
+ #ifdef	AU_DEBUG
+#define debug(fmt,args...) printf (fmt ,##args)
+ #else
+ #define debug(fmt,args...)
+ #endif	/* AU_DEBUG */
 
 #define TRUE	(0)
 #define FALSE	(-1)
@@ -573,7 +573,7 @@ static PartitionInfo_S s_sPartitionInfo[2][5] = {
 			m_nBeginAddr: 0x200000,
 			m_nEndAddr: 0x800000,   
 		}, {
-			m_acName: "ubifs.img",
+			m_acName: "rootfs.img",
 			m_eFlashType: EM_FLASH_TYPE_NANDFLASH,
 			m_sImageInfo: {
 				m_eImageType: EM_IMAGE_TYPE_ROOTFS,
