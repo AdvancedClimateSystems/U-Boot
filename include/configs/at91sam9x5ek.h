@@ -163,7 +163,7 @@
 #define PIN_SDA	AT91_PIN_PA30
 #define PIN_SCL	AT91_PIN_PA31
 
-#define I2C_ACTIVE		
+#define I2C_ACTIVE
 #define I2C_SCL(bit) if(bit) at91_set_gpio_output(PIN_SCL, 1);\
 	else   at91_set_gpio_output(PIN_SCL, 0)
 #define I2C_TRISTATE	{ at91_set_GPIO_periph(PIN_SDA, 1); }

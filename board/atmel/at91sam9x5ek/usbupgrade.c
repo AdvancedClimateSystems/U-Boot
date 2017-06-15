@@ -27,7 +27,8 @@
 #endif
 
 
-#undef AU_DEBUG
+/* #undef AU_DEBUG */
+#define AU_DEBUG
 
 #undef debug
 #ifdef	AU_DEBUG

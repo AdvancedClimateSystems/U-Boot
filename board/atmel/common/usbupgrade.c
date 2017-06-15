@@ -39,6 +39,7 @@
 
  #undef AU_DEBUG
 
+#define AU_DEBUG
 #undef debug
  #ifdef	AU_DEBUG
 #define debug(fmt,args...) printf (fmt ,##args)
@@ -51,15 +52,15 @@
 
 #define LOAD_RAM_ADDRESS	(0x20000000)
 
-static void printPartionInfo(int nIndex, PartitionInfo_S *psPartitionInfo) 
+static void printPartionInfo(int nIndex, PartitionInfo_S *psPartitionInfo)
 {
 	printf("[%d]={\n\t.m_acName = \"%s\",\n\t.m_eFlashType = %d,\n"
 		"\t.m_sImageInfo = {\n\t\t.m_eImageType = %d,\n\t\t.m_nImageOffset = 0x%x,\n"
 		"\t\t.m_nImageSize = 0x%x,\n\t},\n"
-	"\t.m_nBeginAddr = 0x%x,\n\t.m_nEndAddr = 0x%x,\n},\n", nIndex,  
+	"\t.m_nBeginAddr = 0x%x,\n\t.m_nEndAddr = 0x%x,\n},\n", nIndex,
 	psPartitionInfo->m_acName, psPartitionInfo->m_eFlashType,
-	psPartitionInfo->m_sImageInfo.m_eImageType, psPartitionInfo->m_sImageInfo.m_nImageOffset, 
-	psPartitionInfo->m_sImageInfo.m_nImageSize, psPartitionInfo->m_nBeginAddr,	 
+	psPartitionInfo->m_sImageInfo.m_eImageType, psPartitionInfo->m_sImageInfo.m_nImageOffset,
+	psPartitionInfo->m_sImageInfo.m_nImageSize, psPartitionInfo->m_nBeginAddr,
 	psPartitionInfo->m_nEndAddr);
 }
 
@@ -70,7 +71,7 @@ static PacketInfo_S *parsePacketInfo(const void *pvBuf, int nLength)
 	int nCrcValue = 0;
 	int nPartNum = 0;
 	const char *pvTempBuf = (const char *)pvBuf;
-	
+
 	PartitionInfo_S *psPartitionInfo = NULL;
 	PacketInfo_S *psPacketInfo = NULL;
 
@@ -78,7 +79,7 @@ static PacketInfo_S *parsePacketInfo(const void *pvBuf, int nLength)
 		printf("error param.\n");
 		return NULL;
 	}
-	
+
 	nMagicNum = be32_to_cpu(*(int *)pvTempBuf);
 	if (nMagicNum != 0xAAAA5555) {
 		printf("Expect magic number(0x%x) result magic number(0x%x).\n", 0xAA55, nMagicNum);
@@ -86,14 +87,14 @@ static PacketInfo_S *parsePacketInfo(const void *pvBuf, int nLength)
 	}
 
 	pvTempBuf += 4;
-	nCrcValue = be32_to_cpu(*(int *)pvTempBuf); 
+	nCrcValue = be32_to_cpu(*(int *)pvTempBuf);
 	pvTempBuf += 4;
-	nPartNum = be32_to_cpu(*(int *)pvTempBuf); 
-	if (nPartNum==0) {		
+	nPartNum = be32_to_cpu(*(int *)pvTempBuf);
+	if (nPartNum==0) {
 		printf("nPartNum (0x%x).\n", nPartNum);
 		return NULL;
 	}
-	
+
 	psPacketInfo = (PacketInfo_S *)malloc (sizeof(PacketInfo_S)+sizeof(PartitionInfo_S)*nPartNum);
 	if (psPacketInfo==NULL) {
 		printf("malloc error.\n");
@@ -117,10 +118,10 @@ static PacketInfo_S *parsePacketInfo(const void *pvBuf, int nLength)
 /*
 	psPartitionInfo = psPacketInfo->m_sPartitionInfo;
 	for (i=0; i<psPacketInfo->m_nPartionCount; i++) {
-		printPartionInfo(i, psPartitionInfo++);		
+		printPartionInfo(i, psPartitionInfo++);
 	}
 */
-	return psPacketInfo;			
+	return psPacketInfo;
 }
 
 static int current_usb_storage_device = -1;
@@ -147,16 +148,16 @@ static int initUsbDevice(void)
 	stor_dev = get_dev("usb", current_usb_storage_device);
 	if (stor_dev == NULL) {
 		debug ("usb get uknown device type\n");
-		return FALSE;	
+		return FALSE;
 	}
-	
+
 	return TRUE;
 }
 
 static int initMMCDevice(void)
 {
 	int i = 0;
-	
+
 	current_usb_storage_device = get_mmc_num();
 	if (current_usb_storage_device < 0) {
 		debug ("No MMC device found. Not initialized?\n");
@@ -164,13 +165,13 @@ static int initMMCDevice(void)
 	}
 	for (i=0; i<current_usb_storage_device; i++) {
 		stor_dev = get_dev("mmc", i);
-		if (stor_dev != NULL) {	
+		if (stor_dev != NULL) {
 			return TRUE;
 		} else {
 			debug ("mmc get uknown device type(%d)\n", i);
 		}
-	}	
-	
+	}
+
 	return FALSE;
 }
 
@@ -216,7 +217,7 @@ static int loadImageToRam(const char *pcFileName, void *pvOutBuffer, int *pnOutL
 #ifdef CONFIG_ATMEL_LCD
 	lcd_putc('\n');
 #endif
-	
+
 	return TRUE;
 }
 
@@ -228,7 +229,7 @@ static int writeImageToSerialFlash(PartitionInfo_S *psPartitionInfo, void *pvBuf
 	unsigned int nSpeed = 1000000;
 	unsigned int nMode = SPI_MODE_3;
 	ImageInfo_S *psImageInfo = &psPartitionInfo->m_sImageInfo;
-	
+
 	struct spi_flash *psFlash;
 	int nOffset = psPartitionInfo->m_nBeginAddr;
 	int nLength = psPartitionInfo->m_nEndAddr-psPartitionInfo->m_nBeginAddr;
@@ -254,13 +255,13 @@ static int writeImageToSerialFlash(PartitionInfo_S *psPartitionInfo, void *pvBuf
 	if  (psImageInfo->m_eImageType==EM_IMAGE_TYPE_BOOTSTRAP) {
 		*(int *)(pvBuf+psImageInfo->m_nImageOffset+0x14) = nLength;
 	}
-	
+
 	nRet = spi_flash_write(psFlash, nOffset, nLength, pvBuf+psImageInfo->m_nImageOffset);
 	if (nRet) {
 		printf("SPI flash write failed\n");
 		return FALSE;
 	}
-	
+
 	spi_flash_free(psFlash);
 
 	return TRUE;
@@ -269,7 +270,7 @@ static int writeImageToSerialFlash(PartitionInfo_S *psPartitionInfo, void *pvBuf
 static int eraseNandFlash(int nOffsetAddr, int nLength)
 {
 	int nRet = -1;
-		
+
 	nand_info_t *nand = &nand_info[nand_curr_device];
 	nand_erase_options_t opts;
 
@@ -282,14 +283,14 @@ static int eraseNandFlash(int nOffsetAddr, int nLength)
 
 	nRet = nand_erase_opts(nand, &opts);
 	printf("Erase NAND flash 0x%x 0x%x %s\n", nOffsetAddr, nLength, nRet?"ERROR":"OK");
-		
+
 	return (nRet?FALSE:TRUE );
 }
 
 static int writeNandFlash(char *pcSourceBuffer, int nStartAddr, int nLength, ImageType_E type)
 {
 	int nRet = -1;
-		
+
 	nand_info_t *nand = &nand_info[nand_curr_device];
 
 	if (type==EM_IMAGE_TYPE_BOOTSTRAP) {
@@ -315,10 +316,10 @@ static int writeNandFlash(char *pcSourceBuffer, int nStartAddr, int nLength, Ima
 
 		nRet = nand_write_skip_bad(nand, nStartAddr, (unsigned int *)&nLength, (u_char *)pcImageBuffer, 0);
 	} else {
-		nRet = nand_write_skip_bad(nand, nStartAddr, (unsigned int *)&nLength, 
+		nRet = nand_write_skip_bad(nand, nStartAddr, (unsigned int *)&nLength,
 			(u_char *)pcSourceBuffer, (int)(type==EM_IMAGE_TYPE_ROOTFS?WITH_DROP_FFS:0));
 	}
-	
+
 	return nRet?FALSE:TRUE;
 }
 
@@ -330,7 +331,7 @@ static int writeImageToNandFlash(PartitionInfo_S *psPartitionInfo, void *pvBuffe
 	int nOffset = psPartitionInfo->m_nBeginAddr;
 	int nLength = psPartitionInfo->m_nEndAddr-psPartitionInfo->m_nBeginAddr;
 
-	debug("[writeImageToNandFlash] eraseNandFlash(%s, %d, %d) ", 
+	debug("[writeImageToNandFlash] eraseNandFlash(%s, %d, %d) ",
 					psPartitionInfo->m_acName, psPartitionInfo->m_nBeginAddr, psPartitionInfo->m_nEndAddr);
 	nRet = eraseNandFlash(nOffset, nLength);
 	if (nRet == FALSE) {
@@ -340,7 +341,7 @@ static int writeImageToNandFlash(PartitionInfo_S *psPartitionInfo, void *pvBuffe
 		debug(" OK.\n");
 	}
 
-	debug("[writeImageToNandFlash] writeNandFlash(%s, %d, %d) ", 
+	debug("[writeImageToNandFlash] writeNandFlash(%s, %d, %d) ",
 					psPartitionInfo->m_acName, psPartitionInfo->m_nBeginAddr, psPartitionInfo->m_nEndAddr);
 	nRet = writeNandFlash(pvBuffer+psImageInfo->m_nImageOffset, nOffset, psImageInfo->m_nImageSize, psImageInfo->m_eImageType);
 	if (nRet == FALSE) {
@@ -361,12 +362,12 @@ static int writeImageFromRamToFlash(PacketInfo_S * psPacketInfo, void *pvBuffer,
 	PartitionInfo_S *psPartitionInfo = NULL;
 
 	debug("[writeImageFromRamToFlash] psPacketInfo: %p pvBuffer: %p nLength: %d\n", psPacketInfo, pvBuffer, nLength);
-	
+
 	if (psPacketInfo==NULL||pvBuffer==NULL||nLength==0) {
 		debug("[writeImageFromRamToFlash] psPacketInfo: %p pvBuffer: %p nLength: %d\n", psPacketInfo, pvBuffer, nLength);
 		return FALSE;
 	}
-	
+
 #ifdef CONFIG_ATMEL_LCD
 	lcd_printf("System is updated image, please wait");
 #endif
@@ -376,14 +377,14 @@ static int writeImageFromRamToFlash(PacketInfo_S * psPacketInfo, void *pvBuffer,
 		if (psPartitionInfo->m_eFlashType==EM_FLASH_TYPE_SERIALFLASH) {
 			nRet = writeImageToSerialFlash(psPartitionInfo, pvBuffer, nLength);
 			if (nRet == FALSE) {
-				debug("[writeImageFromRamToFlash] writeImageToSerialFlash(%s, %d, %d) failed.\n", 
+				debug("[writeImageFromRamToFlash] writeImageToSerialFlash(%s, %d, %d) failed.\n",
 					psPartitionInfo->m_acName, psPartitionInfo->m_nBeginAddr, psPartitionInfo->m_nEndAddr);
 				return FALSE;
 			}
 		} else if (psPartitionInfo->m_eFlashType==EM_FLASH_TYPE_NANDFLASH) {
 			nRet = writeImageToNandFlash(psPartitionInfo, pvBuffer, nLength);
 			if (nRet == FALSE) {
-				debug("[writeImageFromRamToFlash] writeImageToNandFlash(%s, %d, %d) failed.\n", 
+				debug("[writeImageFromRamToFlash] writeImageToNandFlash(%s, %d, %d) failed.\n",
 					psPartitionInfo->m_acName, psPartitionInfo->m_nBeginAddr, psPartitionInfo->m_nEndAddr);
 				return FALSE;
 			}
@@ -400,7 +401,7 @@ static int writeImageFromRamToFlash(PacketInfo_S * psPacketInfo, void *pvBuffer,
 	return TRUE;
 }
 
-static int __doUpgrade(void) 
+static int __doUpgrade(void)
 {
 	int nRet = FALSE;
 	int nOldCtrlc = 0;
@@ -435,7 +436,7 @@ static int __doUpgrade(void)
 		pcDeviceName = "sam9x25ek";
 		break;
 	}
-	
+
 	memset(acReadFileName, 0, sizeof(acReadFileName));
 	sprintf(acReadFileName, "usbupgrad_%s.dt", pcDeviceName);
 
@@ -459,17 +460,17 @@ static int __doUpgrade(void)
 		free(psPacketInfo);
 		return FALSE;
 	}
-	
+
 	free(psPacketInfo);
 	disable_ctrlc(nOldCtrlc);
-	
+
 	return 0;
 }
 
 static int initStorageDevice(int nStorMode)
 {
 	int nRet = FALSE;
-	
+
 	if (nStorMode==1) {
 		nRet = initMMCDevice();
 		if (nRet == FALSE) {
@@ -479,8 +480,8 @@ static int initStorageDevice(int nStorMode)
 	} else {
 		nRet = initUsbDevice();
 		if (nRet == FALSE) {
-			printf("USB upgrade initialize USB failed.\n"); 	
-			return FALSE;						
+			printf("USB upgrade initialize USB failed.\n");
+			return FALSE;
 		}
 	}
 
@@ -493,7 +494,7 @@ static int initStorageDevice(int nStorMode)
 	return TRUE;
 }
 
-static int doUpgrade(int nStorMode) 
+static int doUpgrade(int nStorMode)
 {
 	if (initStorageDevice(nStorMode)==FALSE) {
 		return FALSE;
@@ -502,12 +503,12 @@ static int doUpgrade(int nStorMode)
 	return __doUpgrade();
 }
 
-int doUsbUpgrade(void) 
+int doUsbUpgrade(void)
 {
 	return doUpgrade(0);
 }
 
-int doMMCUpgrade(void) 
+int doMMCUpgrade(void)
 {
 	return doUpgrade(1);
 }
@@ -551,7 +552,7 @@ static PartitionInfo_S s_sPartitionInfo[2][5] = {
 				m_nImageSize: 0x0,
 			},
 			m_nBeginAddr: 0x40000,
-			m_nEndAddr: 0xC0000,    
+			m_nEndAddr: 0xC0000,
 		}, {
 			m_acName: "at91sam.dtb",
 			m_eFlashType: EM_FLASH_TYPE_NANDFLASH,
@@ -571,7 +572,7 @@ static PartitionInfo_S s_sPartitionInfo[2][5] = {
 				m_nImageSize: 0x0,
 			},
 			m_nBeginAddr: 0x200000,
-			m_nEndAddr: 0x800000,   
+			m_nEndAddr: 0x800000,
 		}, {
 			m_acName: "rootfs.img",
 			m_eFlashType: EM_FLASH_TYPE_NANDFLASH,
@@ -581,9 +582,9 @@ static PartitionInfo_S s_sPartitionInfo[2][5] = {
 				m_nImageSize: 0x0,
 			},
 			m_nBeginAddr: 0x800000,
-			m_nEndAddr: 0x10000000,      
+			m_nEndAddr: 0x10000000,
 		},
-	}, 
+	},
 	/* sama5d3x */
 	{
 		{
@@ -605,7 +606,7 @@ static PartitionInfo_S s_sPartitionInfo[2][5] = {
 				m_nImageSize: 0x0,
 			},
 			m_nBeginAddr: 0x8400,
-			m_nEndAddr: 0x60000,    
+			m_nEndAddr: 0x60000,
 		}, {
 			m_acName: "at91sam.dtb",
 			m_eFlashType: EM_FLASH_TYPE_SERIALFLASH,
@@ -625,7 +626,7 @@ static PartitionInfo_S s_sPartitionInfo[2][5] = {
 				m_nImageSize: 0x0,
 			},
 			m_nBeginAddr: 0x0,
-			m_nEndAddr: 0x800000,   
+			m_nEndAddr: 0x800000,
 		}, {
 			m_acName: "ubifs.img",
 			m_eFlashType: EM_FLASH_TYPE_NANDFLASH,
@@ -635,14 +636,14 @@ static PartitionInfo_S s_sPartitionInfo[2][5] = {
 				m_nImageSize: 0x0,
 			},
 			m_nBeginAddr: 0x800000,
-			m_nEndAddr: 0x10000000,      
+			m_nEndAddr: 0x10000000,
 		},
 	},
 };
 
 int boot_devices_init(void)
 {
-	int i = 0; 
+	int i = 0;
 	int nRet = FALSE;
 	int nErrorFlags = 0;
 	int nErrorCode = 0;
@@ -652,7 +653,8 @@ int boot_devices_init(void)
 	char acFileName[128];
 	PacketInfo_S * psPacketInfo = NULL;
 
-	if (initStorageDevice(0)==FALSE) {
+        // INitialize USB storage.
+	if (initStorageDevice(1)==FALSE) {
 		return -1;
 	}
 
@@ -701,30 +703,43 @@ int boot_devices_init(void)
 
 	psPacketInfo = (PacketInfo_S *)(LOAD_RAM_ADDRESS + 0x1000 - sizeof(PartitionInfo_S) - sizeof(PacketInfo_S));
 	PartitionInfo_S *psPartitionInfo = psPacketInfo->m_sPartitionInfo;
-	
+
 	psPacketInfo->m_nMagic = 0xAAAA5555;
 	psPacketInfo->m_nCrc = 0xFFFFFFFF;
 	psPacketInfo->m_nPartionCount = 1;
 
 	debug("[boot_devices_init] psPacketInfo =%p psPartitionInfo=%p\n", psPacketInfo, psPartitionInfo);
-	
+
+        // USB or SD can contain at most 5 interseting files as is configured
+        // in the  s_sPartitionInfo map:
+        // - bootstrap.bin
+        // - boot.bin
+        // - at91sam.dtb
+        // - uImage
+        // - rootfs.img
+        //
+        // This loop iterates over the map to try to flash each file.
 	for (i=0; i<5; i++) {
 		int nReadLength = 100*1024*1024;
 
+                // Copies entry I of the map with parition info th psPartitionInfo
 		memcpy(psPartitionInfo, &s_sPartitionInfo[nChipType][i], sizeof(PartitionInfo_S));
+                debug("[debug] processing %s", psPartitionInfo->m_acName);
+
 		psPartitionInfo->m_sImageInfo.m_nImageOffset = sizeof(PartitionInfo_S) + sizeof(PacketInfo_S);
-		
+
+                // If psPartitionInfo contains info about the device tree:
 		if (psPartitionInfo->m_sImageInfo.m_eImageType==EM_IMAGE_TYPE_DTB) {
 			snprintf(acFileName, sizeof(acFileName), "%s.dtb", pcDeviceName);
 		} else if (psPartitionInfo->m_sImageInfo.m_eImageType==EM_IMAGE_TYPE_BOOTSTRAP) {
 			const char *pcBootName = NULL;
-			
+
 			if (nChipType == 0) {
 				pcBootName = "at91sam9x5ek";
 			} else {
 				pcBootName = "at91sama5d3xek";
 			}
-			
+
 			if (psPartitionInfo->m_eFlashType == EM_FLASH_TYPE_NANDFLASH) {
 				snprintf(acFileName, sizeof(acFileName), "%s-%s-uboot-3.5.3.bin", pcBootName, "nandflashboot");
 			} else {
@@ -734,7 +749,7 @@ int boot_devices_init(void)
 			snprintf(acFileName, sizeof(acFileName), "%s", psPartitionInfo->m_acName);
 		}
 
-		nRet = loadImageToRam(acFileName, 
+		nRet = loadImageToRam(acFileName,
 			(void *)(LOAD_RAM_ADDRESS+0x1000),
 			&nReadLength);
 		if (nRet == FALSE) {
@@ -759,7 +774,7 @@ int boot_devices_init(void)
 }
 
 
-int get_button_state(void) 
+int get_button_state(void)
 {
 #if defined(CONFIG_AT91SAM9N12) || defined(CONFIG_AT91SAM9X5)
 	at91_set_pio_input(AT91_PIO_PORTB, 12, 1);
